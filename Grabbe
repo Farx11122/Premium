@@ -1,0 +1,227 @@
+local uis = game:GetService("UserInputService")
+local rs = game:GetService("RunService")
+local p = game.Players.LocalPlayer
+local c = p.Character or p.CharacterAdded:Wait()
+local r = c:WaitForChild("HumanoidRootPart")
+
+local d = 20
+local act = false
+local lf = {}
+local ap = 0
+local lc = 0
+
+spawn(function()
+    while true do
+        local ping = p:GetNetworkPing()
+        ap = (ap * 0.7) + (ping * 0.3)
+        lc = math.max(0, (ping - 0.05) * 0.5)
+        task.wait(2)
+    end
+end)
+
+local gui = Instance.new("ScreenGui")
+gui.Parent = p:WaitForChild("PlayerGui")
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+
+local f = Instance.new("Frame")
+f.Size = UDim2.new(0, 180, 0, 100)
+f.Position = UDim2.new(1, -190, 0, 10)
+f.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+f.BorderSizePixel = 2
+f.BorderColor3 = Color3.fromRGB(60, 60, 70)
+f.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 6)
+corner.Parent = f
+
+local tog = Instance.new("TextButton")
+tog.Size = UDim2.new(1, -10, 0, 35)
+tog.Position = UDim2.new(0, 5, 0, 5)
+tog.Text = "RapidFire: OFF"
+tog.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+tog.TextColor3 = Color3.fromRGB(255, 255, 255)
+tog.Font = Enum.Font.GothamBold
+tog.TextSize = 14
+tog.Parent = f
+
+local tc = Instance.new("UICorner")
+tc.CornerRadius = UDim.new(0, 4)
+tc.Parent = tog
+
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(1, -10, 0, 35)
+btn.Position = UDim2.new(0, 5, 0, 45)
+btn.Text = "Steal Nearest"
+btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+btn.Font = Enum.Font.GothamBold
+btn.TextSize = 13
+btn.Parent = f
+
+local bc = Instance.new("UICorner")
+bc.CornerRadius = UDim.new(0, 4)
+bc.Parent = btn
+
+local st = Instance.new("TextLabel")
+st.Size = UDim2.new(1, -10, 0, 15)
+st.Position = UDim2.new(0, 5, 0, 82)
+st.Text = "GGhub"
+st.BackgroundTransparency = 1
+st.TextColor3 = Color3.fromRGB(0, 255, 100)
+st.Font = Enum.Font.GothamBold
+st.TextSize = 11
+st.Parent = f
+
+local pc = {}
+local ct = 0
+local CD = 0.075
+
+local function scn()
+    local n = tick()
+    if n - ct < CD then
+        return pc.c, pc.a
+    end
+    
+    ct = n
+    local prs = {}
+    local cls, mD = nil, math.huge
+    local rp = r.Position
+    
+    for _, o in workspace:GetDescendants() do
+        if o:IsA("ProximityPrompt") and o.Enabled then
+            local pr = o.Parent
+            if not pr then continue end
+            
+            local ps
+            if pr:IsA("Attachment") then
+                ps = pr.WorldPosition
+            elseif pr:IsA("BasePart") then
+                ps = pr.Position
+            elseif pr:IsA("Model") then
+                ps = pr:GetPivot().Position
+            end
+            
+            if ps then
+                local ds = (rp - ps).Magnitude
+                if ds <= d then
+                    table.insert(prs, o)
+                    if ds < mD then
+                        mD = ds
+                        cls = o
+                    end
+                end
+            end
+        end
+    end
+    
+    pc = {c = cls, a = prs}
+    return cls, prs
+end
+
+local function hld(pr)
+    if not pr or not pr.Enabled then return false end
+    
+    local vim = game:GetService("VirtualInputManager")
+    local ek = Enum.KeyCode.E
+    
+    pcall(function() vim:SendKeyEvent(true, ek, false, game) end)
+    
+    local ht = 0.58 - lc
+    task.wait(math.max(0.28, ht))
+    
+    pcall(function() vim:SendKeyEvent(false, ek, false, game) end)
+    
+    return true
+end
+
+local function bps(pr)
+    if not pr or not pr.Enabled then return false end
+    
+    pcall(function()
+        pr.HoldDuration = 0
+        pr.MaxActivationDistance = 50
+    end)
+    
+    for i = 1, 22 do
+        pcall(function() fireproximityprompt(pr) end)
+        task.wait(0.022)
+    end
+    
+    return true
+end
+
+local function cmb(pr)
+    if not pr or not pr.Enabled then return false end
+    
+    hld(pr)
+    task.wait(0.025)
+    bps(pr)
+    
+    return true
+end
+
+local function rpd(pr)
+    if not pr or not pr.Enabled then return end
+    
+    local id = tostring(pr)
+    local n = tick()
+    
+    local cd = 0.095 + lc
+    if lf[id] and n - lf[id] < cd then
+        return
+    end
+    
+    lf[id] = n
+    
+    pcall(function() fireproximityprompt(pr, 0) end)
+    task.wait(0.018)
+    
+    pcall(function()
+        pr.HoldDuration = 0
+        pr.MaxActivationDistance = 50
+        fireproximityprompt(pr)
+    end)
+end
+
+tog.MouseButton1Click:Connect(function()
+    act = not act
+    tog.Text = "RapidFire: " .. (act and "ON" or "OFF")
+    tog.BackgroundColor3 = act and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(50, 50, 60)
+end)
+
+btn.MouseButton1Click:Connect(function()
+    local pr = scn()
+    if pr then cmb(pr) end
+end)
+
+local fc = 0
+rs.Heartbeat:Connect(function()
+    if not act then return end
+    
+    fc += 1
+    
+    if fc % 2 == 0 then
+        local pr = scn()
+        if pr then rpd(pr) end
+    end
+end)
+
+workspace.DescendantAdded:Connect(function(o)
+    if o:IsA("ProximityPrompt") then
+        task.spawn(function()
+            task.wait(0.025)
+            pcall(function()
+                o.HoldDuration = 0
+                o.MaxActivationDistance = 50
+            end)
+        end)
+    end
+end)
+
+p.CharacterAdded:Connect(function(ch)
+    c = ch
+    r = ch:WaitForChild("HumanoidRootPart")
+    pc = {}
+end)
